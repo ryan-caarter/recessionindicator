@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recession Indicator</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <article class="card" role="main">
+        <div class="ticker-bar" aria-label="Market tickers">
+            <span class="ticker-item">S&P 500 <strong>13,274</strong> <span class="change-up">+0.52%</span></span>
+            <span class="ticker-item">S&P 500 <strong>4,139</strong> <span class="change-down">-0.09%</span></span>
+            <span class="ticker-item">DOW <strong>33,612</strong> <span class="change-up">+0.14%</span></span>
+            <span class="ticker-item">TSLA <strong>235.44</strong> <span class="change-down">-1.8%</span></span>
+            <span class="ticker-item">AAPL <strong>174.20</strong> <span class="change-up">+0.98%</span></span>
+            <span class="ticker-item">NVDA <strong>1,038</strong> <span class="change-up">+2.3%</span></span>
+            <span class="ticker-item">AMC <strong>14.00</strong> <span class="change-down">-4.4%</span></span>
+        </div>
+        <header class="hero">
+            <div>
+                <h1>Recession Indicator Calculator</h1>
+            </div>
+        </header>
+        <section class="market-dashboard" aria-label="Business analytics preview">
+            <div class="market-stats">
+                <div><strong>Market Narrative</strong>: <span id="marketNarrative" class="status-info">Analysis engine
+                        is in overdrive.</span></div>
+                <div>Equities scanned: <strong><span id="equitiesScanned"
+                            class="status-success">47,321,002</span></strong></div>
+                <div>Volatility score: <strong><span id="volatilityScore" class="status-warning">87/100</span></strong>
+                </div>
+                <div>Economic sentiment: <strong><span id="economicSentiment" class="status-danger">SEVERE
+                            WARNING</span></strong></div>
+            </div>
+            <div class="market-chart">
+                <div class="chart-header">
+                    <h2>S&P 500</h2>
+                    <span id="nasdaqPrice" class="ticker-value">Loading...</span>
+                </div>
+                <canvas id="nasdaqChart" width="640" height="320" aria-label="S&P 500 price chart"></canvas>
+                <p id="nasdaqStatus" class="chart-subtext">Fetching latest S&P 500 prices...</p>
+            </div>
+        </section>
+        <section class="content">
+            <div class="drop-area" id="dropArea">
+                <strong>Drag & drop a file</strong><br />or click to choose (image, document, etc.)
+                <input type="file" id="fileInput" aria-label="Drop file or click to select" />
+            </div>
+            <div class="row">
+                <label for="textInput">Text / URL / payload</label>
+                <textarea id="textInput" placeholder="Enter prompt..." aria-label="Input text"
+                    spellcheck="false"></textarea>
+            </div>
+            <div class="actions">
+                <button id="analyzeBtn">Analyze</button>
+            </div>
+            <div class="result-box" id="resultBox" aria-live="polite">
+                <p class="result-status" id="status">No analysis yet</p>
+                <p class="result-subtitle" id="subtitle">Enter any input and click Analyze.</p>
+                <div class="progress-wrap hidden" aria-hidden="true">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+
+        </section>
+    </article>
+
+    <script>
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const textInput = document.getElementById('textInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const statusEl = document.getElementById('status');
+        const subtitleEl = document.getElementById('subtitle');
+        const progressBar = document.getElementById('progressBar');
+        const progressWrap = document.querySelector('.progress-wrap');
+
+        function setProgress(percent) {
+            progressWrap.classList.remove('hidden');
+            progressBar.style.width = percent + '%';
+        }
+
+        function hideProgress() {
+            progressWrap.classList.add('hidden');
+        }
+
+        function chooseByDay(list) {
+            const day = new Date().getDay();
+            return list[day % list.length];
+        }
+
+        function updateDailyMarketText() {
+            const narrativeWords = [
+                'In overdrive',
+                'On a volatility tear',
+                'In unsurpassed chaos',
+                'In GDP shock mode',
+                'In macro meltdown',
+                'In fiscal frenzy',
+                'In risk-off mode'
+            ];
+            const sentimentWords = [
+                'SEVERE WARNING',
+                'CRITICAL CONCERN',
+                'HIGH INSTABILITY',
+                'SYSTEMATIC RISK',
+                'S&P ALERT',
+                'MARGIN CALL IMMINENT',
+                'SHARP DOWNTURN'
+            ];
+            const equityLevels = [
+                '47,321,002',
+                '45,995,420',
+                '49,112,911',
+                '46,874,550',
+                '48,200,128',
+                '47,800,221',
+                '46,410,390'
+            ];
+            const volatilityLevels = [
+                '87/100',
+                '91/100',
+                '84/100',
+                '88/100',
+                '93/100',
+                '86/100',
+                '90/100'
+            ];
+
+            const narrative = chooseByDay(narrativeWords);
+            const sentiment = chooseByDay(sentimentWords);
+            const equities = chooseByDay(equityLevels);
+            const volatility = chooseByDay(volatilityLevels);
+
+            document.getElementById('marketNarrative').textContent = narrative;
+            document.getElementById('economicSentiment').textContent = sentiment;
+            document.getElementById('equitiesScanned').textContent = equities;
+            document.getElementById('volatilityScore').textContent = volatility;
+
+            // tone class adjustments
+            document.getElementById('marketNarrative').className = 'status-info';
+            document.getElementById('economicSentiment').className = sentiment.includes('WARNING') || sentiment.includes('CRITICAL') ? 'status-danger' : 'status-warning';
+            document.getElementById('equitiesScanned').className = 'status-success';
+            document.getElementById('volatilityScore').className = 'status-warning';
+        }
+
+        updateDailyMarketText();
+
+        function reportResult(dataType, contentSummary, confidence) {
+            statusEl.textContent = 'YES - recession indicator detected';
+            statusEl.style.color = 'var(--success)';
+            subtitleEl.textContent = `${dataType} detected: ${contentSummary}. Confidence: ${confidence.toFixed(1)}%`;
+        }
+
+        function analyzeFake(inputKind, inputData) {
+            analyzeBtn.disabled = true;
+            statusEl.textContent = 'Analysing...';
+            statusEl.style.color = '#f5c34b';
+            subtitleEl.textContent = `Analyzing input ${inputKind}...`;
+            setProgress(0);
+
+            const stops = Array.from({ length: 2 + Math.floor(Math.random() * 3) }, () => 0.2 + Math.random() * 0.55)
+                .sort((a, b) => a - b)
+                .map((v, i, arr) => (i === 0 ? v : Math.max(arr[i - 1] + 0.06, v)));
+            const snaps = stops.map(v => Math.min(0.97, v));
+
+            const segments = [];
+            let cursorPct = 0;
+
+            snaps.forEach((target) => {
+                const moveDuration = 900 + Math.floor(Math.random() * 600);
+                segments.push({ from: cursorPct, to: target, duration: moveDuration });
+                cursorPct = target;
+
+                const hangDuration = 500 + Math.floor(Math.random() * 900);
+                segments.push({ from: cursorPct, to: cursorPct, duration: hangDuration });
+            });
+
+            const finalDuration = 600 + Math.floor(Math.random() * 1200);
+            segments.push({ from: cursorPct, to: 1, duration: finalDuration });
+
+            const totalDuration = segments.reduce((acc, s) => acc + s.duration, 0);
+            const start = performance.now();
+
+            function tick(now) {
+                const elapsed = now - start;
+                let running = 0;
+                let progress = 0;
+
+                for (const seg of segments) {
+                    if (elapsed <= running + seg.duration) {
+                        const local = (elapsed - running) / seg.duration;
+                        progress = seg.from + (seg.to - seg.from) * local;
+                        break;
+                    }
+                    running += seg.duration;
+                }
+
+                if (elapsed >= totalDuration) {
+                    progress = 1;
+                }
+
+                setProgress(Math.min(100, Math.max(0, progress * 100)));
+
+                if (elapsed < totalDuration) {
+                    requestAnimationFrame(tick);
+                    return;
+                }
+
+                const confidence = 60 + Math.random() * 24.9;
+                const summary = inputData.slice(0, 65).replace(/\n/g, ' ') || 'no visible content';
+                reportResult(inputKind, summary, confidence);
+                setProgress(100);
+                analyzeBtn.disabled = false;
+                setTimeout(() => {
+                    hideProgress();
+                    progressBar.style.width = '0%';
+                }, 700);
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        function categorizeText(text) {
+            const lower = text.toLowerCase();
+            if (/https?:\/\/.+/.test(lower) || lower.includes('.com') || lower.includes('.net') || lower.includes('.io')) {
+                return 'URL';
+            }
+            if (lower.includes('prompt') || lower.match(/\bwhat if\b|\bshould i\b|\bforecast\b/)) {
+                return 'prompt';
+            }
+            if (lower.includes('pdf') || lower.includes('.pdf') || lower.includes('document')) {
+                return 'document text';
+            }
+            return 'text';
+        }
+
+        function categorizeFile(file) {
+            if (!file || !file.type) return 'Unknown file';
+            if (file.type.startsWith('image/')) return 'Image file';
+            if (file.type === 'application/pdf') return 'PDF document';
+            if (file.type.startsWith('text/')) return 'Text document';
+            if (file.type.includes('word') || file.name.match(/\.(docx?|pptx?|xlsx?)$/i)) return 'Office document';
+            return 'Other file';
+        }
+
+        function handleInput(kind, value) {
+            if (!value || value.trim() === '') {
+                statusEl.textContent = 'No input found';
+                statusEl.style.color = '#f56c6c';
+                subtitleEl.textContent = 'Please provide text, a URL, or drag a file first.';
+                return;
+            }
+            analyzeFake(kind, value);
+        }
+
+        analyzeBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text.length > 0) {
+                const kind = categorizeText(text);
+                handleInput(`${kind}`, text);
+            } else if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const kind = categorizeFile(file);
+                handleInput(kind, `${file.name} (${file.type || 'unknown type'})`);
+            } else {
+                handleInput('Text', '(empty input)');
+            }
+        });
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropArea.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropArea.classList.add('active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            dropArea.addEventListener(evt, (e) => {
+                e.preventDefault();
+                if (evt === 'drop') {
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInput.files = files;
+                        const file = files[0];
+                        textInput.value = '';
+                        analyzeFake('File', `${file.name} (${file.type || 'unknown type'}, ${file.size} bytes)`);
+                    }
+                }
+                dropArea.classList.remove('active');
+            });
+        });
+
+        fileInput.addEventListener('change', () => {
+            textInput.value = '';
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                statusEl.textContent = `Ready to analyze ${file.name}`;
+                statusEl.style.color = 'var(--accent)';
+                subtitleEl.textContent = 'Press Analyze to start analysis of the uploaded file.';
+            }
+        });
+
+        // S&P 500 graph + live price replacement (replaces dow.png)
+        const nasdaqChart = document.getElementById('nasdaqChart');
+        const nasdaqPrice = document.getElementById('nasdaqPrice');
+        const nasdaqStatus = document.getElementById('nasdaqStatus');
+
+        async function fetchSP500Data() {
+            const proxy = 'https://api.allorigins.win/raw?url=';
+            const target = 'https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=2m&range=1d';
+            try {
+                nasdaqStatus.textContent = 'Fetching latest price...';
+                const response = await fetch(proxy + encodeURIComponent(target));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const quote = data.chart.result[0];
+                const timestamps = quote.timestamp || [];
+                const closes = quote.indicators.quote[0].close || [];
+
+                if (!timestamps.length || !closes.length) {
+                    throw new Error('No data points returned');
+                }
+
+                const latest = closes.filter(v => typeof v === 'number').pop();
+                nasdaqPrice.textContent = latest ? `$ ${latest.toFixed(2)}` : 'N/A';
+
+                drawSparkline(closes.map((v, i) => ({ t: timestamps[i], v })));
+                nasdaqStatus.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+            } catch (err) {
+                const fallback = [4200, 4203, 4199, 4205, 4210, 4207, 4216, 4222, 4218, 4229];
+                nasdaqPrice.textContent = `$ ${fallback[fallback.length - 1].toFixed(2)}`;
+                drawSparkline(fallback.map((v, i) => ({ t: Date.now() / 1000 - (fallback.length - 1 - i) * 120, v })));
+            }
+        }
+
+
+        function drawSparkline(points) {
+            const ctx = nasdaqChart.getContext('2d');
+            const w = nasdaqChart.width;
+            const h = nasdaqChart.height;
+            ctx.clearRect(0, 0, w, h);
+
+            const values = points.map(p => p.v).filter(v => typeof v === 'number');
+            if (!values.length) return;
+
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min || 1;
+
+            const xStep = w / (values.length - 1 || 1);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#61dafb';
+            ctx.beginPath();
+
+            values.forEach((value, idx) => {
+                const x = xStep * idx;
+                const y = h - ((value - min) / range) * (h * 0.74) - 0.1 * h;
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(97, 218, 251, 0.15)';
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fill();
+
+            // draw latest value label
+            const latestValue = values[values.length - 1];
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Inter, Arial, sans-serif';
+            ctx.fillText(`S&P 500 ${latestValue.toFixed(2)}`, 18, 28);
+        }
+
+        fetchSP500Data();
+        setInterval(fetchSP500Data, 60 * 1000);
+    </script>
+</body>
+<footer class="tiny">Powered by the Nasdaq Oracle v12.3 | <a href="about.html">About</a></footer>
+
+
+</html>
