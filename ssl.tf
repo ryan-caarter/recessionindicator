@@ -103,7 +103,7 @@ resource "aws_wafv2_web_acl" "site_rate_limit" {
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "recessionindicatorWAF"
-    sampled_requests_enabled   = true
+    sampled_requests_enabled   = false
   }
 
   rule {
@@ -124,15 +124,10 @@ resource "aws_wafv2_web_acl" "site_rate_limit" {
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "rateLimitPerIP"
-      sampled_requests_enabled   = true
+      sampled_requests_enabled   = false
     }
   }
 }
-
-# resource "aws_wafv2_web_acl_association" "cdn" {
-#   resource_arn = aws_cloudfront_distribution.cdn.arn
-#   web_acl_arn  = aws_wafv2_web_acl.site_rate_limit.arn
-#}
 
 resource "aws_route53_record" "www" {
   zone_id = data.aws_route53_zone.main.zone_id
